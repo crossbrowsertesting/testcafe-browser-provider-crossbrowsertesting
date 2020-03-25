@@ -1,5 +1,5 @@
 {
-  "name": "@crossbrowsertesting/testcafe-browser-provider-crossbrowsertesting",
+  "name": "testcafe-browser-provider-cbt-official",
   "version": "1.0.6",
   "description": "crossbrowsertesting TestCafe browser provider plugin.",
   "repository": "https://github.com/sijosyn/testcafe-browser-provider-crossbrowsertesting",
@@ -14,9 +14,7 @@
     "lib"
   ],
   "scripts": {
-    "test": "gulp test",
-    "publish-please": "publish-please",
-    "prepublish": "publish-please guard"
+    "test": "gulp test"
   },
   "keywords": [
     "testcafe",
