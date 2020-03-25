@@ -2,21 +2,19 @@
   "name": "@crossbrowsertesting/testcafe-browser-provider-crossbrowsertesting",
   "version": "1.0.6",
   "description": "crossbrowsertesting TestCafe browser provider plugin.",
-  "repository": "https://github.com/sijosyn/testcafe-browser-provider-crossbrowsertesting",
-  "homepage": "https://github.com/sijosyn/testcafe-browser-provider-crossbrowsertesting",
+  "repository": "https://github.com/crossbrowsertesting/testcafe-browser-provider-crossbrowsertesting",
+  "homepage": "https://github.com/crossbrowsertesting/testcafe-browser-provider-crossbrowsertesting",
   "author": {
-    "name": "Sijo Cheeran",
-    "email": "sijo.cheeran@synacor.com",
-    "url": "https://synacor.com"
+    "name": "SmartBear",
+    "email": "info@smartbear.com",
+    "url": "https://smartbear.com"
   },
   "main": "lib/index",
   "files": [
     "lib"
   ],
   "scripts": {
-    "test": "gulp test",
-    "publish-please": "publish-please",
-    "prepublish": "publish-please guard"
+    "test": "gulp test"
   },
   "keywords": [
     "testcafe",
