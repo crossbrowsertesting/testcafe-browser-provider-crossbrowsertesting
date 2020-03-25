@@ -1,3 +1,5 @@
+<img src="https://crossbrowsertesting.com/design/images/brand/cbt-sb-logo.svg" width="50%">
+
 # testcafe-browser-provider-crossbrowsertesting
 [![Build Status](https://travis-ci.org/sijosyn/testcafe-browser-provider-crossbrowsertesting.svg)](https://travis-ci.org/sijosyn/testcafe-browser-provider-crossbrowsertesting)
 
@@ -6,7 +8,7 @@ This plugin integrates [TestCafe](http://devexpress.github.io/testcafe) with the
 ## Install
 
 ```
-npm install testcafe-browser-provider-crossbrowsertesting
+npm install testcafe-browser-provider-cbt-official
 ```
 
 ## Usage
@@ -27,16 +29,15 @@ In the terminal, enter source ~/.bash_profile.
 ## Check available browsers
 You can determine the available browser aliases by running
 ```
-testcafe -b crossbrowsertesting
+testcafe -b cbt-official
 ```
 
 ## Run tests
 When you run tests from the command line, use the alias when specifying browsers:
 
 ```
-testcafe "crossbrowsertesting:Internet Explorer@11:Windows 10" "path/to/test/file.js"
+testcafe "cbt-official:Internet Explorer@11:Windows 10" "path/to/test/file.js"
 ```
-
 
 When you use API, pass the alias to the `browsers()` method:
 
@@ -44,7 +45,7 @@ When you use API, pass the alias to the `browsers()` method:
 testCafe
     .createRunner()
     .src('path/to/test/file.js')
-    .browsers('crossbrowsertesting:Internet Explorer@11:Windows 10')
+    .browsers('cbt-official:Internet Explorer@11:Windows 10')
     .run();
 ```
 
@@ -58,5 +59,10 @@ Use the following environment variables to set additional [configuration options
  - `CBT_MAX_DURATION` - By default, a test will have a maximum run time of 600 seconds (10 minutes). If you need more time you can change that by passing the max_duration capability along with a value.The highest value is 14400 seconds (4 hours). [More details](https://help.crossbrowsertesting.com/selenium-testing/faq/default-duration-selenium-test-timeout-information/)
 - `CBT_CHROME_ARGS` - Extra arguments to pass to Chrome.  e.g. `--autoplay-policy=no-user-gesture-required`
 
-## Author
-Sijo Cheeran (https://synacor.com)
+## Debugging
+
+Having trouble with the plugin? Set the following environment variable to get additional logging:
+
+```
+export CBT_DEBUG=true
+```
