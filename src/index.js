@@ -5,8 +5,19 @@ import CBTConnector from 'cbt_tunnels';
 import request from 'request-promise';
 import wd from 'wd';
 
+if (!process.env.CBT_DEBUG)
+    console.error = () => {};
+
+import { promisify } from 'util';
+
+CBTConnector.startp = promisify(CBTConnector.start);
+
 var openedBrowsers = {};
 var webDriver;
+
+let tunnel;
+
+const tunnelName = Buffer.from(Math.random().toString()).toString('hex');
 
 const AUTH_FAILED_ERROR = 'Authentication failed. Please assign the correct username and access key ' +
     'to the CBT_TUNNELS_USERNAME and CBT_TUNNELS_AUTHKEY environment variables.';
@@ -63,6 +74,97 @@ async function startBrowser (id, url, capabilities) {
     }
 }
 
+async function _afterTunnel (id, pageUrl, browserName) {
+
+    var colon = browserName.indexOf(':');
+
+    if (colon > -1) {
+        var platform = browserName.substr(colon + 1);
+
+        browserName = browserName.substr(0, colon);
+    }
+    var at = browserName.indexOf('@');
+
+    if (at > -1) {
+        var version = browserName.substr(at + 1);
+
+        browserName = browserName.substr(0, at);
+    }
+
+    var capabilities;
+
+    if (browserName !== 'Chrome Mobile' && browserName !== 'Mobile Safari') {
+        capabilities = {
+            browserName: browserName,
+            version:     version,
+            platform:    platform,
+            tunnelname:  tunnelName
+        };
+    }
+    else {
+        capabilities = {
+            browserName:     browserName,
+            platformVersion: version,
+            deviceName:      platform,
+            tunnelname:      tunnelName
+        };
+    }
+
+    capabilities.idleTimeout = '3600';
+    console.error(`Starting test for browser: ${browserName}`);
+    // CrossBrowserTesting-Specific Capabilities
+    capabilities.name = `TestCafe test run ${id}`;
+    if (process.env.CBT_BUILD)
+        capabilities.build = process.env.CBT_BUILD;
+    if (process.env.CBT_RECORD_VIDEO)
+        capabilities.record_video = process.env.CBT_RECORD_VIDEO.match(/true/i);
+    if (process.env.CBT_RECORD_NETWORK)
+        capabilities.record_video = process.env.CBT_RECORD_NETWORK.match(/true/i);
+    if (process.env.CBT_MAX_DURATION)
+        capabilities.max_duration = process.env.CBT_MAX_DURATION;
+
+    if (browserName.indexOf('Chrome') !== -1 && process.env.CBT_CHROME_ARGS && process.env.CBT_CHROME_ARGS.length > 0)
+        capabilities.chromeOptions = { args: [process.env.CBT_CHROME_ARGS] };
+
+    await startBrowser(id, pageUrl, capabilities);
+}
+
+async function _pollForTunnel () {
+    return new Promise( (res, rej) => {
+        let timeout = null;
+        let interval = null;
+
+        timeout = setTimeout(function () {
+            clearInterval(interval);
+            clearTimeout(timeout);
+            const errMessage = 'Could not find running cbt_tunnels in time';
+
+            console.error(errMessage);
+            const err = new Error(errMessage);
+
+            rej(err);
+        }, 30000);
+
+        interval = setInterval( async function () {
+            const tunnelList = JSON.parse(await doRequest(CBT_API_PATHS.tunnelInfo));
+
+            if (tunnelList.meta.record_count >= 1) {
+                for (let i = 0; i < tunnelList.meta.record_count; i++) {
+                    console.error('Checking for tunnel in tunnel list', tunnelList.tunnels[i]);
+                    if (tunnelList.tunnels[i].tunnel_name === tunnelName &&
+                        tunnelList.tunnels[i].state === 'running') {
+                        console.error('Found running tunnel');
+                        clearInterval(interval);
+                        clearTimeout(timeout);
+                        res(true);
+                    }
+                }
+            }
+        }, 1000);
+    });
+
+}
+
 export default {
     // Multiple browsers support
     isMultiBrowser: true,
@@ -102,59 +204,20 @@ export default {
         if (!process.env['CBT_TUNNELS_USERNAME'] || !process.env['CBT_TUNNELS_AUTHKEY'])
             throw new Error(AUTH_FAILED_ERROR);
 
-        await CBTConnector.start({ 'username': process.env['CBT_TUNNELS_USERNAME'], 'authkey': process.env['CBT_TUNNELS_AUTHKEY'] }, async function (err) {
-            if (!err) {
+        if (!tunnel) {
+            console.error(`No tunnel started, starting tunnel for session ${id}`);
 
-                var colon = browserName.indexOf(':');
+            tunnel = true;
+            await CBTConnector.startp(
+                {
+                    'tunnelname': tunnelName,
+                    'username':   process.env['CBT_TUNNELS_USERNAME'],
+                    'authkey':    process.env['CBT_TUNNELS_AUTHKEY'] },
+            );
+        }
+        else await _pollForTunnel(id);
 
-                if (colon > -1) {
-                    var platform = browserName.substr(colon + 1);
-
-                    browserName = browserName.substr(0, colon);
-                }
-                var at = browserName.indexOf('@');
-
-                if (at > -1) {
-                    var version = browserName.substr(at + 1);
-
-                    browserName = browserName.substr(0, at);
-                }
-
-                var capabilities;
-
-                if (browserName !== 'Chrome Mobile' && browserName !== 'Mobile Safari') {
-                    capabilities = {
-                        browserName: browserName,
-                        version:     version,
-                        platform:    platform
-                    };
-                }
-                else {
-                    capabilities = {
-                        browserName:     browserName,
-                        platformVersion: version,
-                        deviceName:      platform
-                    };
-                }
-
-                // CrossBrowserTesting-Specific Capabilities
-                capabilities.name = `TestCafe test run ${id}`;
-                if (process.env.CBT_BUILD)
-                    capabilities.build = process.env.CBT_BUILD;
-                if (process.env.CBT_RECORD_VIDEO)
-                    capabilities.record_video = process.env.CBT_RECORD_VIDEO.match(/true/i);
-                if (process.env.CBT_RECORD_NETWORK)
-                    capabilities.record_video = process.env.CBT_RECORD_NETWORK.match(/true/i);
-                if (process.env.CBT_MAX_DURATION)
-                    capabilities.max_duration = process.env.CBT_MAX_DURATION;
-
-                if (browserName.indexOf('Chrome') !== -1 && process.env.CBT_CHROME_ARGS && process.env.CBT_CHROME_ARGS.length > 0)
-                    capabilities.chromeOptions = { args: [process.env.CBT_CHROME_ARGS] };
-
-                await startBrowser(id, pageUrl, capabilities);
-            }
-
-        });
+        await _afterTunnel(id, pageUrl, browserName);
     },
 
     async closeBrowser (id) {

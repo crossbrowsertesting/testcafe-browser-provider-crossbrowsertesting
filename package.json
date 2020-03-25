@@ -1,5 +1,5 @@
 {
-  "name": "testcafe-browser-provider-crossbrowsertesting",
+  "name": "@crossbrowsertesting/testcafe-browser-provider-crossbrowsertesting",
   "version": "1.0.6",
   "description": "crossbrowsertesting TestCafe browser provider plugin.",
   "repository": "https://github.com/sijosyn/testcafe-browser-provider-crossbrowsertesting",
