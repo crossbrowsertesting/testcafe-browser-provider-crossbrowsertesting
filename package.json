@@ -1,6 +1,6 @@
 {
   "name": "testcafe-browser-provider-cbt-official",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "crossbrowsertesting TestCafe browser provider plugin.",
   "repository": "https://github.com/crossbrowsertesting/testcafe-browser-provider-crossbrowsertesting",
   "homepage": "https://github.com/crossbrowsertesting/testcafe-browser-provider-crossbrowsertesting",
