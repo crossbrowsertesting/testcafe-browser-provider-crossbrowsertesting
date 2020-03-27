@@ -17,7 +17,15 @@ var webDriver;
 
 let tunnel;
 
-const tunnelName = Buffer.from(Math.random().toString()).toString('hex');
+// set server timeouts in case a session is queued for a short while
+wd.configureHttp({
+    timeout:    5 * 60 * 1000,
+    retries:    3,
+    retryDelay: 1000,
+});
+
+
+const tunnelName = Buffer.from(Math.random().toString()).toString('hex').slice(8);
 
 const AUTH_FAILED_ERROR = 'Authentication failed. Please assign the correct username and access key ' +
     'to the CBT_TUNNELS_USERNAME and CBT_TUNNELS_AUTHKEY environment variables.';
@@ -34,7 +42,7 @@ const CBT_API_PATHS = {
         method: 'DELETE'
     }),
     seleniumTestHistory: {
-        url: 'https://crossbrowsertesting.com/api/v3/selenium?active=true'
+        url: 'https://crossbrowsertesting.com/api/v3/selenium?active=true&build=' + tunnelName
     },
     deleteBrowser: id => ({
         url:    `https://crossbrowsertesting.com/api/v3/selenium/${id}`,
@@ -64,10 +72,16 @@ async function startBrowser (id, url, capabilities) {
     webDriver = wd.promiseChainRemote('hub.crossbrowsertesting.com', 80, process.env['CBT_TUNNELS_USERNAME'], process.env['CBT_TUNNELS_AUTHKEY']);
     openedBrowsers[id] = webDriver;
 
+
     try {
         await webDriver
         .init(capabilities)
         .get(url);
+
+        // setup interval to send periodic commands to keep the session alive
+        openedBrowsers[id].keepaliveInterval = setInterval( async function() {
+            await openedBrowsers[id].title();
+        }, 30 * 1000 );
     }
     catch (error) {
         throw error;
@@ -98,7 +112,6 @@ async function _afterTunnel (id, pageUrl, browserName) {
             browserName: browserName,
             version:     version,
             platform:    platform,
-            tunnelname:  tunnelName
         };
     }
     else {
@@ -106,12 +119,14 @@ async function _afterTunnel (id, pageUrl, browserName) {
             browserName:     browserName,
             platformVersion: version,
             deviceName:      platform,
-            tunnelname:      tunnelName
         };
     }
 
-    capabilities.idleTimeout = '3600';
-    console.error(`Starting test for browser: ${browserName}`);
+    capabilities.tunnelname = tunnelName;
+    capabilities.build = tunnelName;
+    capabilities.idleTimeout = '180';
+    capabilities.max_duration = '14400';
+    console.error(`Starting session ${id} for ${browserName}`);
     // CrossBrowserTesting-Specific Capabilities
     capabilities.name = `TestCafe test run ${id}`;
     if (process.env.CBT_BUILD)
@@ -129,7 +144,7 @@ async function _afterTunnel (id, pageUrl, browserName) {
     await startBrowser(id, pageUrl, capabilities);
 }
 
-async function _pollForTunnel () {
+async function _pollForTunnel (id) {
     return new Promise( (res, rej) => {
         let timeout = null;
         let interval = null;
@@ -137,7 +152,7 @@ async function _pollForTunnel () {
         timeout = setTimeout(function () {
             clearInterval(interval);
             clearTimeout(timeout);
-            const errMessage = 'Could not find running cbt_tunnels in time';
+            const errMessage = `Session ${id} Could not find running cbt_tunnels in time`;
 
             console.error(errMessage);
             const err = new Error(errMessage);
@@ -150,10 +165,9 @@ async function _pollForTunnel () {
 
             if (tunnelList.meta.record_count >= 1) {
                 for (let i = 0; i < tunnelList.meta.record_count; i++) {
-                    console.error('Checking for tunnel in tunnel list', tunnelList.tunnels[i]);
                     if (tunnelList.tunnels[i].tunnel_name === tunnelName &&
                         tunnelList.tunnels[i].state === 'running') {
-                        console.error('Found running tunnel');
+                        console.error(`Session ${id} connected to running tunnel`);
                         clearInterval(interval);
                         clearTimeout(timeout);
                         res(true);
@@ -214,6 +228,7 @@ export default {
                     'username':   process.env['CBT_TUNNELS_USERNAME'],
                     'authkey':    process.env['CBT_TUNNELS_AUTHKEY'] },
             );
+            console.error(`Session ${id} finished starting tunnel`);
         }
         else await _pollForTunnel(id);
 
@@ -221,6 +236,9 @@ export default {
     },
 
     async closeBrowser (id) {
+        // make sure we clear keepaliveInterval, or node won't exit
+        console.error(`Closing Session ${id}`);
+        clearInterval(openedBrowsers[id].keepaliveInterval);
         await openedBrowsers[id].quit();
     },
 
@@ -235,6 +253,7 @@ export default {
     },
 
     async dispose () {
+        console.error('disposing all sessions');
         this.seleniumHistoryList = JSON.parse(await doRequest(CBT_API_PATHS.seleniumTestHistory));
         if (this.seleniumHistoryList.meta.record_count >= 1) {
             for (let i = 0; i < this.seleniumHistoryList.meta.record_count; i++) {
