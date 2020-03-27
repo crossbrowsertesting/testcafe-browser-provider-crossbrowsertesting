@@ -268,7 +268,7 @@ export default {
             for (let i = 0; i < this.tunnelList.meta.record_count; i++) {
                 const t = this.tunnelList.tunnels[i];
 
-                if (t.tunnelname === tunnelName) await doRequest(CBT_API_PATHS.deleteTunnel(t.tunnelID));
+                if (t.tunnel_name === tunnelName) await doRequest(CBT_API_PATHS.deleteTunnel(t.tunnelID));
 
             }
         }
