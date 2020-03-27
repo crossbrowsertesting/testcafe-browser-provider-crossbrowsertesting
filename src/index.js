@@ -266,8 +266,10 @@ export default {
         this.tunnelList = JSON.parse(await doRequest(CBT_API_PATHS.tunnelInfo));
         if (this.tunnelList.meta.record_count >= 1) {
             for (let i = 0; i < this.tunnelList.meta.record_count; i++) {
-                this.tunnelID = this.tunnelList.tunnels[i].tunnel_id;
-                await doRequest(CBT_API_PATHS.deleteTunnel(this.tunnelID));
+                const t = this.tunnelList.tunnels[i];
+
+                if (t.tunnelname === tunnelName) await doRequest(CBT_API_PATHS.deleteTunnel(t.tunnelID));
+
             }
         }
     },
