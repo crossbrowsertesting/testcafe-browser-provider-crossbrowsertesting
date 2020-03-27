@@ -268,7 +268,11 @@ export default {
             for (let i = 0; i < this.tunnelList.meta.record_count; i++) {
                 const t = this.tunnelList.tunnels[i];
 
-                if (t.tunnel_name === tunnelName) await doRequest(CBT_API_PATHS.deleteTunnel(t.tunnelID));
+                console.error('looking at tunnel', t);
+                if (t.tunnel_name === tunnelName) {
+                    console.error('found tunnel to kill');
+                    await doRequest(CBT_API_PATHS.deleteTunnel(t.tunnel_id));
+                }
 
             }
         }
