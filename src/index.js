@@ -79,8 +79,9 @@ async function startBrowser (id, url, capabilities) {
         .get(url);
 
         // setup interval to send periodic commands to keep the session alive
-        openedBrowsers[id].keepaliveInterval = setInterval( async function() {
-            await openedBrowsers[id].title();
+        openedBrowsers[id].keepaliveInterval = setInterval( function () {
+            console.error(`sending keepalive: ${id}`);
+            openedBrowsers[id].title();
         }, 30 * 1000 );
     }
     catch (error) {
