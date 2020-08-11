@@ -135,7 +135,7 @@ async function _afterTunnel (id, pageUrl, browserName) {
     if (process.env.CBT_RECORD_VIDEO)
         capabilities.record_video = process.env.CBT_RECORD_VIDEO.match(/true/i);
     if (process.env.CBT_RECORD_NETWORK)
-        capabilities.record_video = process.env.CBT_RECORD_NETWORK.match(/true/i);
+        capabilities.record_network = process.env.CBT_RECORD_NETWORK.match(/true/i);
     if (process.env.CBT_MAX_DURATION)
         capabilities.max_duration = process.env.CBT_MAX_DURATION;
 
